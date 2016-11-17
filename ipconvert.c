@@ -3,10 +3,13 @@
 #include <sys/stat.h>
 #include <arpa/inet.h>
 
+/**
+ * Note: Output varies based on endianess of machine
+ */
 int main (int argc, char **argv)
 {
     struct in_addr ip_obj;
-    int nums[] = {0x0, 0xffffffff, 0x7f000001};
+    int nums[] = {0x0, 0xffffffff, 0x0100007f};
     char *strings[] = {"205.188.160.121", "64.12.149.13", "205.188.146.23"};
     int num_loops = sizeof(nums)/sizeof(nums[0]);
     int string_loops = sizeof(strings)/sizeof(strings[0]);
