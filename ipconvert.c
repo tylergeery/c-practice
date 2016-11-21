@@ -1,11 +1,20 @@
+/**
+ * ipconvert.c
+ *
+ * Uses a few pre-defined decimal dotted string and outputs as hex values
+ * Also, uses a few pre-defined hex values and outputs as decimal-dotted strings
+
+ * Note: Output varies based on endianess of machine
+ * Build: gcc ipconvert.c -o exec/ipconvert
+ * A&W: 11.1
+ */
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <arpa/inet.h>
 
-/**
- * Note: Output varies based on endianess of machine
- */
 int main (int argc, char **argv)
 {
     struct in_addr ip_obj;
@@ -16,14 +25,14 @@ int main (int argc, char **argv)
 
     for (int i = 0; i < num_loops; i++) {
         ip_obj.s_addr = nums[i];
-        printf("%x as ip: %s\n", nums[i], inet_ntoa(ip_obj));
+        printf("0x%x as ip: %s\n", nums[i], inet_ntoa(ip_obj));
     }
 
     for (int j = 0; j < string_loops; j++) {
         int add_as_int = inet_aton(strings[j], &ip_obj);
 
         if (add_as_int) {
-            printf("%s as int ip: %x\n", strings[j], ip_obj.s_addr);
+            printf("%s as int ip: 0x%x\n", strings[j], ip_obj.s_addr);
         }
     }
 }
