@@ -1,11 +1,11 @@
-#include "../csapp.csapp.h"
+#include "../csapp/csapp.h"
 
 void webserve(int fd);
 void read_request_headers(rio_t *rp);
-int parse_uri(char *uri, char *filename, char *cgiargs);
+int parse_uri(char *uri, char *filename, char *dynamic_args);
 void serve_static(int fd, char *filename, int filesize);
 void get_filetype(char *filename, char *filetype);
-void serve_dynamic(int fd, char *filename, char *cgiargs);
+void serve_dynamic(int fd, char *filename, char *dynamic_args);
 void clienterror(int fd, char *cause, char *errnum,
                     char *shortmsg, char *longmsg);
 
@@ -48,7 +48,7 @@ void webserve(int fd)
     int is_static;
     struct stat sbuf;
     char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
-    char filename[MAXLINE], cgiargs[MAXLINE];
+    char filename[MAXLINE], dynamic_args[MAXLINE];
     rio_t rio;
 
     /**
@@ -69,7 +69,7 @@ void webserve(int fd)
      /**
       * Parse URI from GET request
       */
-     is_static = parse_uri(uri, filename, cgiargs);
+     is_static = parse_uri(uri, filename, dynamic_args);
 
      if (stat(filename, &sbuf) < 0) {
          clienterror(fd, filename, "404", "Not found",
@@ -98,6 +98,6 @@ void webserve(int fd)
              return;
          }
 
-         serve_dynamic(fd, filename, cgiargs);
+         serve_dynamic(fd, filename, dynamic_args);
      }
 }

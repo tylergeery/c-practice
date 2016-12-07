@@ -1,3 +1,4 @@
+#include <string.h>
 #include "../csapp/csapp.h"
 
 /**
@@ -6,14 +7,14 @@
 void clienterror(int fd, char *cause, char *errnum,
                     char *shortmsg, char *longmsg)
 {
-    char buf[MAXLINE], body[MAXBUF]
+    char buf[MAXLINE], body[MAXBUF];
 
     /**
      * Build the HTTP response body
      */
     sprintf(body, "<html><title>Tiny Error</title>");
     sprintf(body, "%s<body bgcolor=""ffffff"">\r\n", body);
-    sprintf(body, "%s%s: $s\r\n", body, errnum, shortmsg);
+    sprintf(body, "%s%s: %s\r\n", body, errnum, shortmsg);
     sprintf(body, "%s<p>%s: %s\r\n", body, longmsg, cause);
     sprintf(body, "%s<hr><em>The Tiny Web server</em>\r\n", body);
 
@@ -46,7 +47,7 @@ void read_request_headers(rio_t *rp)
      */
     while(strcmp(buf, "\r\n")) {
         Rio_readlineb(rp, buf, MAXLINE);
-        printf(%s, buf);
+        printf("%s", buf);
     }
 
     return;
@@ -56,7 +57,7 @@ void read_request_headers(rio_t *rp)
  * Finds content to be delivered from uri
  * Returns 1 for static content, 0 for dynamic
  */
-void parse_uri(char *uri, char *filename, char *cgiargs)
+int parse_uri(char *uri, char *filename, char *dynamic_args)
 {
     char *ptr;
 
@@ -64,7 +65,7 @@ void parse_uri(char *uri, char *filename, char *cgiargs)
         /**
          * Find static content
          */
-        strcpy(cgiargs, "");
+        strcpy(dynamic_args, "");
         strcpy(filename, "./static");
         strcat(filename, uri);
 
@@ -80,16 +81,39 @@ void parse_uri(char *uri, char *filename, char *cgiargs)
          ptr = index(uri, '?');
 
          if (ptr) {
-             strcpy(cgiargs, ptr+1);
+             strcpy(dynamic_args, ptr+1);
              *ptr = '\0';
          } else {
-             strcpy(cgiargs, "");
+             strcpy(dynamic_args, "");
          }
 
          strcpy(filename, ".");
          strcat(filename, uri);
 
          return 0;
+    }
+}
+
+/**
+ * Gets the HTTP mime type for filename
+ */
+void get_filetype(char *filename, char *filetype)
+{
+    char *suffix = strdup(filename);
+    char *filepath = strsep(&suffix, ".");
+
+    if (stricmp(suffix,"html") == 0) {
+        strcpy(filetype, "text/html");
+    } else if (stricmp(suffix,"gif") == 0) {
+        strcpy(filetype, "image/gif");
+    } else if (stricmp(suffix,"jpg") == 0 || stricmp(suffix, "jpeg") == 0) {
+        strcpy(filetype, "image/jpeg");
+    } else if (stricmp(suffix,"css") == 0) {
+        strcpy(filetype, "text/css");
+    } else if (stricmp(suffix,"js") == 0) {
+        strcpy(filetype, "text/javascript");
+    } else {
+        strcpy(filetype, "text/plain");
     }
 }
 
@@ -115,48 +139,63 @@ void serve_static(int fd, char *filename, int filesize)
     /**
      * Send response body to client
      */
+
+    // open file and get file descriptor
     srcfd = Open(filename, O_RDONLY, 0);
-    srcp = MMap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0); //?? TODO
+
+    // maps requested file to to private, read-only virtual memory
+    // memory area starts srcp
+    srcp = MMap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
+
+    // closes file descriptor
     Close(srcfd);
+
+    // writes virtual memory to output file descriptor
     Rio_writen(fd, srcp, filesize);
-    Munmap(srcp, filesize); //?? TODO
+
+    // frees mapped virtual memory area
+    Munmap(srcp, filesize);
 }
 
-void serve_dynamic(int fd, char *filename, char *cgiargs)
+void serve_dynamic(int fd, char *filename, char *dynamic_args)
 {
+    int srcfd;
     char buf[MAXLINE], *emptylist[] = { NULL };
 
     /**
      * Return first part of HTTP response
      */
-}
+     sprintf(buf, "HTTP/1.0 200 OK\r\n");
+     Rio_writen(fd, buf, strlen(buf));
+     sprintf(buf, "Server: Tiny Web Server\r\n");
+     Rio_writen(fd, buf, strlen(buf));
 
-/**
- * Gets the HTTP mime type for filename
- */
-void get_filetype(char *filename, char *filetype)
-{
-    char *suffix = strfup(filename);
-    char *filepath = strsep(&suffix, ".");
+     if (Fork() == 0) {
+         /**
+          * Set all Dynamic Args here
+          *
+          * e.g $_GET
+          */
+          // open file and get file descriptor
+          //srcfd = Open(filename, O_RDONLY, 0);
 
-    switch (suffix) {
-        case "html":
-            strcpy(filetype, "text/html");
-            break;
-        case "gif":
-            strcpy(filetype, "image/gif");
-            break;
-        case "jpg":
-        case "jpeg":
-            strcpy(filetype, "image/jpeg");
-            break;
-        case "css":
-            strcpy(filetype, "text/css");
-            break;
-        case "js":
-            strcpy(filetype, "text/javascript");
-            break;
-        default:
-            strcpy(filetype, "text/plain");
-    }
+          // maps requested file to to private, read-only virtual memory
+          // memory area starts srcp
+        //   srcp = MMap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
+          //
+        //   // loop through templates
+        //   // set dynamic vars
+          //
+        //   // closes file descriptor
+        //   Close(srcfd);
+          //
+        //   // writes virtual memory to output file descriptor
+        //   Rio_writen(fd, srcp, filesize);
+          //
+        //   // frees mapped virtual memory area
+        //   Munmap(srcp, filesize);
+     }
+
+     // parent waits to clean up (reap) child
+     Wait(NULL);
 }
