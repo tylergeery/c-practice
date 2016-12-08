@@ -1,4 +1,3 @@
-#include <string.h>
 #include "../csapp/csapp.h"
 
 /**
@@ -61,12 +60,12 @@ int parse_uri(char *uri, char *filename, char *dynamic_args)
 {
     char *ptr;
 
-    if (!strstr(uri, "cgi-bin")) {
+    if (!strstr(uri, "dynamic")) {
         /**
          * Find static content
          */
         strcpy(dynamic_args, "");
-        strcpy(filename, "./static");
+        strcpy(filename, "./webserver/static");
         strcat(filename, uri);
 
         if (uri[strlen(uri)-1] == '/') {
@@ -102,15 +101,15 @@ void get_filetype(char *filename, char *filetype)
     char *suffix = strdup(filename);
     char *filepath = strsep(&suffix, ".");
 
-    if (stricmp(suffix,"html") == 0) {
+    if (strcasecmp(suffix,"html") == 0) {
         strcpy(filetype, "text/html");
-    } else if (stricmp(suffix,"gif") == 0) {
+    } else if (strcasecmp(suffix,"gif") == 0) {
         strcpy(filetype, "image/gif");
-    } else if (stricmp(suffix,"jpg") == 0 || stricmp(suffix, "jpeg") == 0) {
+    } else if (strcasecmp(suffix,"jpg") == 0 || strcasecmp(suffix, "jpeg") == 0) {
         strcpy(filetype, "image/jpeg");
-    } else if (stricmp(suffix,"css") == 0) {
+    } else if (strcasecmp(suffix,"css") == 0) {
         strcpy(filetype, "text/css");
-    } else if (stricmp(suffix,"js") == 0) {
+    } else if (strcasecmp(suffix,"js") == 0) {
         strcpy(filetype, "text/javascript");
     } else {
         strcpy(filetype, "text/plain");
@@ -145,7 +144,7 @@ void serve_static(int fd, char *filename, int filesize)
 
     // maps requested file to to private, read-only virtual memory
     // memory area starts srcp
-    srcp = MMap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
+    srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
 
     // closes file descriptor
     Close(srcfd);
