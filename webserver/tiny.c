@@ -92,9 +92,15 @@ void webserve(int fd)
          /**
           * Serve dynamic content
           */
-         if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
+         if (!(S_ISREG(sbuf.st_mode))) {
              clienterror(fd, filename, "403", "Forbidden",
-                        "Tiny couldn't run the CGI program");
+                        "Tiny couldn't run the dynamic program");
+             return;
+         }
+
+         if (!(S_IXUSR & sbuf.st_mode)) {
+             clienterror(fd, filename, "403", "Forbidden",
+                        "Tiny did not have permissions to run the program");
              return;
          }
 

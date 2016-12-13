@@ -86,7 +86,7 @@ int parse_uri(char *uri, char *filename, char *dynamic_args)
              strcpy(dynamic_args, "");
          }
 
-         strcpy(filename, ".");
+         strcpy(filename, "./webserver");
          strcat(filename, uri);
 
          return 0;
