@@ -171,28 +171,16 @@ void serve_dynamic(int fd, char *filename, char *dynamic_args)
 
      if (Fork() == 0) {
          /**
-          * Set all Dynamic Args here
-          *
-          * e.g $_GET
+          * Set all dynamic args for renderer
           */
-          // open file and get file descriptor
-          //srcfd = Open(filename, O_RDONLY, 0);
+          setenv("QUERY_STRING", dynamic_args, 1);
+          setenv("FILENAME", filename, 1);
 
-          // maps requested file to to private, read-only virtual memory
-          // memory area starts srcp
-        //   srcp = MMap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
-          //
-        //   // loop through templates
-        //   // set dynamic vars
-          //
-        //   // closes file descriptor
-        //   Close(srcfd);
-          //
-        //   // writes virtual memory to output file descriptor
-        //   Rio_writen(fd, srcp, filesize);
-          //
-        //   // frees mapped virtual memory area
-        //   Munmap(srcp, filesize);
+         /** Redirect stdout to client */
+         Dup2(fd, STDOUT_FILENO);
+
+         /** Call renderer */
+         Execve("./exec/render", emptylist, environ);
      }
 
      // parent waits to clean up (reap) child
