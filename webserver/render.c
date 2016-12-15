@@ -1,6 +1,11 @@
 #include "../csapp/csapp.h"
 #include <stdio.h>
 
+#define ARRAY_LENGTH(array) (sizeof((array))/sizeof((array)[0]))
+
+struct Query {
+    char *params[10][2];
+};
 /**
  * Gets the passed file's size
  */
@@ -13,28 +18,49 @@ long int get_filesize(FILE *stream)
     return filesize;
 }
 
+void logT(char *desc, char *string) {
+    Rio_writen(STDOUT_FILENO, desc, strlen(desc));
+    Rio_writen(STDOUT_FILENO, string, strlen(string));
+    Rio_writen(STDOUT_FILENO, "\n", strlen("\n"));
+}
 /**
  * Get the params from a query string
  */
-char ** get_params(char * query_string)
+struct Query get_params(char *query_string)
 {
     int i = 0;
-    char *p, next;
-    char **params;
+    int j;
+    int length;
+    char *next;
+    char *dec;
+    char *qs = malloc(strlen(query_string) + 1);
+    char **params = malloc(0);
+    struct Query q;
+
+    // dont overwrite query string
+    strcpy(qs, query_string);
 
     // split query string on vars
-    while ((next = strtok(query_string, "&")) != NULL) {
-        int j = 0;
-        char *values[2];
+    next = strtok(qs, "&");
 
-        while ((p = strtok(next, "=")) != NULL) {
-            values[j++] = p;
-        }
+    while (next != NULL) {
+        logT("Param: ", next);
 
-        params[i++] = values;
+        // dynamically allocate space... not efficient
+        ++i;
+        params = realloc(params, i * sizeof(char*) + 1);
+        params[i] = next;
+
+        // get next token from static buffer
+        next = strtok(NULL, "&");
     }
 
-    return params;
+    for (j = 0; j < ARRAY_LENGTH(params); j++) {
+        q.params[j][0] = strtok(params[j], "=");
+        q.params[j][1] = strtok(NULL, "=");
+    }
+
+    return q;
 }
 
 int main(int argc, char **argv)
@@ -43,8 +69,8 @@ int main(int argc, char **argv)
     char dir[MAXLINE];
     char *template = getenv("FILENAME");
     char *query_string = getenv("QUERY_STRING");
-    char *tmp;
-    char **params;
+    char *param_string;
+    struct Query q;
 
     getcwd(dir, sizeof(dir));
 
@@ -61,13 +87,14 @@ int main(int argc, char **argv)
 
     // replace all dynamic variables in templates
     if (buffer) {
-        // copy over query string to be tokenized
-        //strcpy(tmp, query_string);
-
         // get params
-        //params = get_params(tmp);
+        get_params(query_string);
 
-        // loop through params and write to buffer
+        // // loop through params and write to buffer
+        // for (int i = 0; i < ARRAY_LENGTH(q.params); i++) {
+        //     sprintf(param_string, "param: %s, value: %s\n", q.params[i][0], q.params[i][1]);
+        //     Rio_writen(STDOUT_FILENO, param_string, strlen(param_string));
+        // }
     }
 
     //printf("first param: %s\n\n", params[0]);
