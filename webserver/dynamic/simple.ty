@@ -1,11 +1,13 @@
 <html>
     <head>
-        <title>Tiny Home</title>
-        <link rel="stylesheet" href="home.css">
+        <title>Tiny Home - {{name}}'s Place</title>
+        <link rel="stylesheet" href="/home.css">
     </head>
     <body>
         <h1>Welcome to the Home of Tiny</h1>
         <p>This is a feeble attempt to create a simple webserver</p>
-        <img src="tiny.jpeg" alt="Tiny Penguin"/>
+        <p>Hi, {{name}}</p>
+        <p>I will call you {{nickname}}</p>
+        <img src="/tiny.jpeg" alt="Tiny Penguin"/>
     </body>
 </html>

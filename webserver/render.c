@@ -1,10 +1,9 @@
 #include "../csapp/csapp.h"
 #include <stdio.h>
 
-#define ARRAY_LENGTH(array) (sizeof((array))/sizeof((array)[0]))
-
 struct Query {
     char *params[10][2];
+    int param_count;
 };
 /**
  * Gets the passed file's size
@@ -18,24 +17,35 @@ long int get_filesize(FILE *stream)
     return filesize;
 }
 
-void logT(char *desc, char *string) {
-    Rio_writen(STDOUT_FILENO, desc, strlen(desc));
-    Rio_writen(STDOUT_FILENO, string, strlen(string));
-    Rio_writen(STDOUT_FILENO, "\n", strlen("\n"));
+void logStr(char *desc, char *string) {
+    char output[MAXLINE];
+    sprintf(output, "%s: %s\n", desc, string);
+    Rio_writen(STDOUT_FILENO, output, strlen(output));
 }
+
+void logPtr(char *desc, char *ptr) {
+    char string[MAXLINE];
+    sprintf(string, "%s Address: %p\n", desc, ptr);
+    Rio_writen(STDOUT_FILENO, string, strlen(string));
+}
+
+void logInt(char *desc, int i) {
+    char string[MAXLINE];
+    sprintf(string, "%d\n", i);
+    Rio_writen(STDOUT_FILENO, string, strlen(string));
+}
+
 /**
  * Get the params from a query string
  */
 struct Query get_params(char *query_string)
 {
-    int i = 0;
     int j;
-    int length;
     char *next;
-    char *dec;
-    char *qs = malloc(strlen(query_string) + 1);
-    char **params = malloc(0);
+    char *qs = (char *)malloc(sizeof(query_string));
+    char **params = (char **)malloc(0);
     struct Query q;
+    q.param_count = 0;
 
     // dont overwrite query string
     strcpy(qs, query_string);
@@ -44,23 +54,47 @@ struct Query get_params(char *query_string)
     next = strtok(qs, "&");
 
     while (next != NULL) {
-        logT("Param: ", next);
-
         // dynamically allocate space... not efficient
-        ++i;
-        params = realloc(params, i * sizeof(char*) + 1);
-        params[i] = next;
+        params = realloc(params, (q.param_count+1) * sizeof(char*));
+        params[q.param_count] = (char *)malloc(sizeof(char));
+
+        // copy to params
+        strcpy(params[q.param_count], next);
 
         // get next token from static buffer
         next = strtok(NULL, "&");
+        q.param_count++;
     }
 
-    for (j = 0; j < ARRAY_LENGTH(params); j++) {
-        q.params[j][0] = strtok(params[j], "=");
+    for (j = 0; j < q.param_count; j++) {
+        // dont overwrite param
+        char *string = (char *)malloc(sizeof(params[j]));
+        strcpy(string, params[j]);
+
+        q.params[j][0] = strtok(string, "=");
         q.params[j][1] = strtok(NULL, "=");
     }
 
     return q;
+}
+
+char *replace_var(char *str, char *orig, char *rep)
+{
+    static char buffer[MAXBUF];
+    char *pos;
+
+    // Is 'orig' even in 'str'?
+    if(!(pos = strstr(str, orig))) {
+        return str;
+    }
+
+    // Copy characters from 'str' start to 'orig' st$
+    strncpy(buffer, str, pos - str);
+    buffer[pos - str] = '\0';
+
+    sprintf(buffer + (pos - str), "%s%s", rep, pos + strlen(orig));
+
+    return buffer;
 }
 
 int main(int argc, char **argv)
@@ -69,7 +103,6 @@ int main(int argc, char **argv)
     char dir[MAXLINE];
     char *template = getenv("FILENAME");
     char *query_string = getenv("QUERY_STRING");
-    char *param_string;
     struct Query q;
 
     getcwd(dir, sizeof(dir));
@@ -80,24 +113,26 @@ int main(int argc, char **argv)
     long int filesize = get_filesize(template_file);
 
     // read template to string buffer
-    void *buffer = malloc(filesize);
-    if (buffer) {
-        fread(buffer, 1, filesize, template_file);
+    char *buffer = malloc(MAXBUF);
+    fread(buffer, 1, filesize, template_file);
+
+    // get params
+    q = get_params(query_string);
+
+    // // loop through params and write to buffer
+    for (int i = 0; i < q.param_count; i++) {
+        char replace_val[MAXLINE];
+        sprintf(replace_val, "{{%s}}", q.params[i][0]);
+
+        // replace all dynamic variables in templates
+        if (q.params[i][1] != NULL) {
+            char *new_template = malloc(MAXBUF);
+            while ((new_template = replace_var(buffer, replace_val, q.params[i][1])) != buffer) {
+                buffer = new_template;
+            }
+        }
     }
 
-    // replace all dynamic variables in templates
-    if (buffer) {
-        // get params
-        get_params(query_string);
-
-        // // loop through params and write to buffer
-        // for (int i = 0; i < ARRAY_LENGTH(q.params); i++) {
-        //     sprintf(param_string, "param: %s, value: %s\n", q.params[i][0], q.params[i][1]);
-        //     Rio_writen(STDOUT_FILENO, param_string, strlen(param_string));
-        // }
-    }
-
-    //printf("first param: %s\n\n", params[0]);
     // write to STDOUT_FILENO
     Rio_writen(STDOUT_FILENO, buffer, strlen(buffer));
 
