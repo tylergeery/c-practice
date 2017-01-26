@@ -80,7 +80,7 @@ struct Query get_params(char *query_string)
 
 char *replace_var(char *str, char *orig, char *rep)
 {
-    static char buffer[MAXBUF];
+    char *buffer = malloc(MAXBUF);
     char *pos;
 
     // Is 'orig' even in 'str'?

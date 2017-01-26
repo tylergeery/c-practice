@@ -98,8 +98,8 @@ int parse_uri(char *uri, char *filename, char *dynamic_args)
  */
 void get_filetype(char *filename, char *filetype)
 {
-    char *suffix = (strrchr(filename, ".")) + 1;
-    printf("Suffix: %s\n", suffix);
+    char *suffix = strdup(filename) + 1; // in case first character is .
+    char *filepath = strsep(&suffix, ".");
 
     if (strcasecmp(suffix,"html") == 0) {
         strcpy(filetype, "text/html");

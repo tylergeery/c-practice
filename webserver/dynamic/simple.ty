@@ -7,7 +7,7 @@
         <h1>Welcome to the Home of Tiny</h1>
         <p>This is a feeble attempt to create a simple webserver</p>
         <p>Hi, {{name}}</p>
-        <p>I will call you {{nickname}}</p>
+        <p>I will call you {{alias}}</p>
         <img src="/tiny.jpeg" alt="Tiny Penguin"/>
     </body>
 </html>
