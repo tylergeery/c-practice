@@ -50,9 +50,17 @@ func subtract(row int, done chan bool) {
 }
 
 func multiply(row int, done chan bool) {
-	for i := row; i < len(n); i += ROUTINE_COUNT {
-		for j := 0; j < len(n[i]); j++ {
-			result_matrix[i][j] = n[i][j] * m[i][j]
+	// for each row in result array (that applies to this thread)
+	for i := row; i < len(result_matrix); i += ROUTINE_COUNT {
+		for j := 0; j < len(result_matrix[i]); j++ {
+			// lock ij
+
+			// for each column in M, multiply its items by row in N
+			sum := 0
+			for k := 0; k < len(result_matrix); k++ {
+				sum += n[i][k] * m[k][j]
+			}
+			result_matrix[i][j] = sum
 		}
 	}
 
@@ -87,8 +95,11 @@ func main() {
 		f = add
 	case "subtract":
 		f = subtract
-	default:
+	case "multiply":
 		f = multiply
+	default:
+		usage()
+		return
 	}
 
 	for i := 0; i < ROUTINE_COUNT; i++ {
