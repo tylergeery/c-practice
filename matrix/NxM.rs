@@ -1,9 +1,22 @@
 use std::{env, thread};
+use std::thread::JoinHandle;
 
 const ROUTINE_COUNT: i32 = 3;
 
 fn usage(file: &String) {
 	println!("Usage: {} <operation>\n", file);
+}
+
+fn add(result: &[&[i32; 3]; 3], row: i32) {
+	while(row < )
+}
+
+fn subtract(result: &[&[i32; 3]; 3], row: i32) {
+
+}
+
+fn multiply(result: &[&[i32; 3]; 3], row: i32) {
+
 }
 
 fn main() {
@@ -19,7 +32,7 @@ fn main() {
 		[3, 1, 1]
 	];
 
-	let result_matrix = [
+	let ref result_matrix = [
 		[0, 0, 0],
 		[0, 0, 0],
 		[0, 0, 0]
@@ -33,22 +46,23 @@ fn main() {
 		return;
 	}
 
-	match &args[1] {
-		"add" => add(), // Do nothing
-		"subtract" => subtract(),
-		"multiple" => muliply(),
+	let mut threads: Vec<JoinHandle<_>> = Vec::new();
+	let cmd = &args[1];
+	let func = match &cmd[..] {
+		"add" => add, // Do nothing
+		"subtract" => subtract,
+		"multiply" => multiply,
 		_ => { usage(&args[1]); return; }
+	};
+
+	for i in 1..(ROUTINE_COUNT + 1) {
+		threads.push(thread::spawn(|| {
+			func(&result_matrix, i);
+		}));
 	}
 
-	let handle = thread::spawn(|| {
-		for i in 1..10 {
-			println!("printing {} from spawned thread", i);
-		}
-	});
-
-	let _ = handle.join();
-
-	for j in 1..5 {
-		println!("printing {} from subsequent loop", j);
+	for thread in threads.into_iter() {
+		println!("{:?}", thread);
+		let _ = thread.join();
 	}
 }
