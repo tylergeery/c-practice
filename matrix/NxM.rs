@@ -1,4 +1,5 @@
 use std::{env, thread};
+use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
 const ROUTINE_COUNT: i32 = 3;
@@ -7,7 +8,7 @@ fn usage(file: &String) {
 	println!("Usage: {} <operation>\n", file);
 }
 
-fn add(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &mut [[i32; 3]; 3], mut row: i32) {
+fn add(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &mut Arc<Mutex<[[i32; 3]; 3]>>, mut row: i32) {
 	while row < (n.len() as i32) {
 		let r: usize = row as usize;
 		let col: i32 = 0;
@@ -22,11 +23,11 @@ fn add(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &mut [[i32; 3]; 3], mut row
 	}
 }
 
-fn subtract(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &mut [[i32; 3]; 3], row: i32) {
+fn subtract(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &mut Arc<Mutex<[[i32; 3]; 3]>>, row: i32) {
 
 }
 
-fn multiply(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &mut [[i32; 3]; 3], row: i32) {
+fn multiply(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &mut Arc<Mutex<[[i32; 3]; 3]>>, row: i32) {
 
 }
 
@@ -43,7 +44,7 @@ fn main() {
 		[3, 1, 1]
 	];
 
-	let result_matrix  = [[0; 3]; 3];
+	let ref result_matrix  = Arc::new(Mutex::new([[0; 3]; 3]));
 
 	let args: Vec<String> = env::args().collect();
 
