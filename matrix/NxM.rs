@@ -7,17 +7,26 @@ fn usage(file: &String) {
 	println!("Usage: {} <operation>\n", file);
 }
 
-fn add(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &[[i32; 3]; 3], mut row: i32) {
+fn add(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &mut [[i32; 3]; 3], mut row: i32) {
 	while row < (n.len() as i32) {
+		let r: usize = row as usize;
+		let col: i32 = 0;
+
+		while col < (n[r].len() as i32) {
+			let c: usize = col as usize;
+
+			result[r][c] = n[r][c] + m[r][c];
+		}
+
 		row = row + ROUTINE_COUNT;
 	}
 }
 
-fn subtract(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &[[i32; 3]; 3], row: i32) {
+fn subtract(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &mut [[i32; 3]; 3], row: i32) {
 
 }
 
-fn multiply(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &[[i32; 3]; 3], row: i32) {
+fn multiply(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &mut [[i32; 3]; 3], row: i32) {
 
 }
 
@@ -55,7 +64,7 @@ fn main() {
 
 	for i in 1..(ROUTINE_COUNT + 1) {
 		threads.push(thread::spawn(move || {
-			func(&n, &m, &result_matrix, i);
+			func(&n, &m, &mut result_matrix, i);
 		}));
 	}
 
