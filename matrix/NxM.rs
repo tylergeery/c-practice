@@ -7,15 +7,17 @@ fn usage(file: &String) {
 	println!("Usage: {} <operation>\n", file);
 }
 
-fn add(result: &[&[i32; 3]; 3], row: i32) {
-	while(row < )
+fn add(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &[[i32; 3]; 3], mut row: i32) {
+	while row < (n.len() as i32) {
+		row = row + ROUTINE_COUNT;
+	}
 }
 
-fn subtract(result: &[&[i32; 3]; 3], row: i32) {
+fn subtract(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &[[i32; 3]; 3], row: i32) {
 
 }
 
-fn multiply(result: &[&[i32; 3]; 3], row: i32) {
+fn multiply(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &[[i32; 3]; 3], row: i32) {
 
 }
 
@@ -32,11 +34,7 @@ fn main() {
 		[3, 1, 1]
 	];
 
-	let ref result_matrix = [
-		[0, 0, 0],
-		[0, 0, 0],
-		[0, 0, 0]
-	];
+	let result_matrix  = [[0; 3]; 3];
 
 	let args: Vec<String> = env::args().collect();
 
@@ -56,13 +54,14 @@ fn main() {
 	};
 
 	for i in 1..(ROUTINE_COUNT + 1) {
-		threads.push(thread::spawn(|| {
-			func(&result_matrix, i);
+		threads.push(thread::spawn(move || {
+			func(&n, &m, &result_matrix, i);
 		}));
 	}
 
 	for thread in threads.into_iter() {
-		println!("{:?}", thread);
 		let _ = thread.join();
 	}
+
+	println!("{:?}", result_matrix);
 }
