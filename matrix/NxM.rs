@@ -8,15 +8,16 @@ fn usage(file: &String) {
 	println!("Usage: {} <operation>\n", file);
 }
 
-fn add(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &mut Arc<Mutex<[[i32; 3]; 3]>>, mut row: i32) {
+fn add<'a>(n: &[[i32; 3]; 3], m: &[[i32; 3]; 3], result: &'a mut Arc<Mutex<[[i32; 3]; 3]>>, mut row: i32) {
 	while row < (n.len() as i32) {
 		let r: usize = row as usize;
 		let col: i32 = 0;
+		let mut dest = result.lock().unwrap();
 
 		while col < (n[r].len() as i32) {
 			let c: usize = col as usize;
 
-			result[r][c] = n[r][c] + m[r][c];
+			dest[r][c] = n[r][c] + m[r][c];
 		}
 
 		row = row + ROUTINE_COUNT;
@@ -65,7 +66,7 @@ fn main() {
 
 	for i in 1..(ROUTINE_COUNT + 1) {
 		threads.push(thread::spawn(move || {
-			func(&n, &m, &mut result_matrix, i);
+			func(&n, &m, &mut result_matrix.clone(), i);
 		}));
 	}
 
