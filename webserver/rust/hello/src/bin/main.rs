@@ -2,9 +2,9 @@ extern crate hello;
 
 use std::fs::File;
 use std::io::prelude::*;
-use std::net::{TcpListener, TcpStream};
+use std::net::{Shutdown, TcpListener, TcpStream};
 use std::{thread, time};
-use hello::ThreadPool;
+use hello::ThreadPool::ThreadPool;
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
@@ -25,6 +25,7 @@ fn handle_connection(mut stream: TcpStream) {
 
     let get = b"GET / HTTP/1.1\r\n";
     let sleep = b"GET /sleep HTTP/1.1\r\n";
+    let shutdown = b"GET /shutdown HTTP1.1\r\n";
 
     // TODO: better match routing
     let (status_line, filename) = if buffer.starts_with(get) {
@@ -32,6 +33,9 @@ fn handle_connection(mut stream: TcpStream) {
     } else if buffer.starts_with(sleep)  {
         thread::sleep(time::Duration::new(5, 0));
         ("HTTP/1.1 200 OK", "html/hello.html")
+    } else if buffer.starts_with(shutdown) {
+        stream.shutdown(Shutdown::Read);
+        ("HTTP/1.1 500 OK", "html/500.html")
     } else {
         ("HTTP/1.1 404 NOT FOUND", "html/404.html")
     };
