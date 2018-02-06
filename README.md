@@ -9,26 +9,20 @@ The book is wonderful
 ### Compiling and Running
 ```
 # Basic Tiny w/ Renderer Process
-gcc -o ./exec/render csapp/csapp.c
-gcc -o ./exec/tinyserver webserver/tiny.c webserver/helpers.c csapp/csapp.c
+make tiny_render
 ./exec/tiny_server <port>
 
 # Tiny Server as processes w/ Renderer Process
-gcc -o ./exec/render csapp/csapp.c
-gcc -o ./exec/tiny_processes webserver/tiny_processes.c webserver/helpers.c csapp/csapp.c
+make tiny_processes
 ./exec/tinyserver_processes <port>
 
 # Multi-threaded Tiny server
-gcc -o ./exec/tiny_threads webserver/tiny_threads.c webserver/render_threads.c webserver/helpers_threads.c csapp/csapp.c
+make [tiny_threads]
 ./exec/tiny_threads <port>
 
 # Pre-threaded Multi-threaded Tiny Server
-
+TODO
 ```
-
-### Makefiles
-To come someday
-
 
 ## Rust Practice Scripts
 
