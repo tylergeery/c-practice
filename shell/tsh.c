@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <strings.h>
+#include <string.h>
+#include <sys/wait.h>
 
 #define MAX_LINE 80
 #define MAX_HISTORY 100
@@ -19,17 +20,16 @@ void getCommand(char *command)
 
     fgets(command, MAX_LINE, stdin);
     command[strcspn(command, "\n")] = 0;
-
-    return command;
 }
 
 void addHistory(History *h, char *command)
 {
-    if (h->current == (MAX_HISTORY - 1)) {
+    h->current++;
+    if (h->current == MAX_HISTORY) {
         h->current = 0;
     }
 
-    &(h->commands[h->current]) = command;
+    strcpy(h->commands[h->current], command);
 
     if (h->count < MAX_HISTORY) {
         h->count++;
@@ -41,10 +41,8 @@ void getArgs(char **args, char *command)
     int count = 0;
     char * pch;
 
-    printf ("Splitting command \"%s\" into args:\n", command);
     pch = strtok (command," ");
     while (pch != NULL) {
-        printf ("arg %d: %s\n", count, pch);
         args[count] = pch;
         count++;
         pch = strtok (NULL, " ");
@@ -56,11 +54,15 @@ int main(void)
     // assuming every other character is a space
     char *args[MAX_LINE/2 + 1];
     char command[MAX_LINE];
+    char command_for_history[MAX_LINE];
     History h;
+    h.current = 0;
+    h.count = 0;
 
     while (1) {
         // get command
         getCommand(command);
+        strcpy(command_for_history, command);
 
         // parse command to make args
         getArgs(args, command);
@@ -71,22 +73,34 @@ int main(void)
 
         if (strcmp(args[0], "history") == 0) {
             // TODO: print history
-        }
+            printf("print history: length (%d), current (%d)\n", h.count, h.current);
+            for (int i = 0; i < h.count; i++) {
+                int indy = (h.current - i);
+                if (indy < 0) {
+                    indy = indy % h.count;
+                }
 
-        pid_t pid = fork();
-
-        if (pid > 0) {
-            if (strpbrk(args, "&") == NULL) {
-                printf("Parent Waiting\n");
-                wait(NULL);
+                printf("%d %s\n", h.count - i, h.commands[indy]);
             }
-
-            printf("Parent continuing\n");
         } else {
-            printf("Child running command: %s\n", args[0]);
-            // execvp(args[0], args);
-            return 0;
+            pid_t pid = fork();
+
+            if (pid > 0) {
+                if (strpbrk(args[0], "&") == NULL) {
+                    printf("Parent Waiting\n");
+                    wait(NULL);
+                }
+            } else {
+                printf("Child running command: %s\n", args[0]);
+                // execvp(args[0], args);
+                return 0;
+            }
         }
+
+        // add commnd to history
+        addHistory(&h, command_for_history);
+
+
 
     }
 }
