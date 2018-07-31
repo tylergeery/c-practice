@@ -72,8 +72,6 @@ int main(void)
         }
 
         if (strcmp(args[0], "history") == 0) {
-            // TODO: print history
-            printf("print history: length (%d), current (%d)\n", h.count, h.current);
             for (int i = 0; i < h.count; i++) {
                 int indy = (h.current - i);
                 if (indy < 0) {
@@ -87,11 +85,9 @@ int main(void)
 
             if (pid > 0) {
                 if (strpbrk(args[0], "&") == NULL) {
-                    printf("Parent Waiting\n");
                     wait(NULL);
                 }
             } else {
-                printf("Child running command: %s\n", args[0]);
                 // execvp(args[0], args);
                 return 0;
             }
@@ -99,8 +95,5 @@ int main(void)
 
         // add commnd to history
         addHistory(&h, command_for_history);
-
-
-
     }
 }
