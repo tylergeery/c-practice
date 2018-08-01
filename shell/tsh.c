@@ -13,13 +13,17 @@ typedef struct {
     char commands[MAX_HISTORY][MAX_LINE];
 } History;
 
-void getCommand(char *command)
+void getCommand(char *command, History *h)
 {
     printf("tsh> ");
     fflush(stdout);
 
     fgets(command, MAX_LINE, stdin);
     command[strcspn(command, "\n")] = 0;
+
+    if (strcmp(command, "!!") == 0) {
+        strcpy(command, h->commands[h->current]);
+    }
 }
 
 void addHistory(History *h, char *command)
@@ -65,7 +69,7 @@ int main(void)
 
     while (1) {
         // get command
-        getCommand(command);
+        getCommand(command, &h);
 
         if (strcmp(command, "") == 0) {
             continue;
