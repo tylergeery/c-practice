@@ -41,6 +41,10 @@ void getArgs(char **args, char *command)
     int count = 0;
     char * pch;
 
+    for (int i = 0; i < MAX_LINE/2; i++) {
+        args[i] = NULL;
+    }
+
     pch = strtok (command," ");
     while (pch != NULL) {
         args[count] = pch;
@@ -62,6 +66,11 @@ int main(void)
     while (1) {
         // get command
         getCommand(command);
+
+        if (strcmp(command, "") == 0) {
+            continue;
+        }
+
         strcpy(command_for_history, command);
 
         // parse command to make args
@@ -88,7 +97,7 @@ int main(void)
                     wait(NULL);
                 }
             } else {
-                // execvp(args[0], args);
+                execvp(args[0], args);
                 return 0;
             }
         }
