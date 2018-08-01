@@ -24,6 +24,15 @@ void getCommand(char *command, History *h)
     if (strcmp(command, "!!") == 0) {
         strcpy(command, h->commands[h->current]);
     }
+
+    if (strlen(command) && command[0] == '!') {
+        char *end;
+        long i = strtol(command + 1, &end, 10);
+
+        if (i > 0 && i <= h->count) {
+            strcpy(command, h->commands[h->current - (h->count - i)]);
+        }
+    }
 }
 
 void addHistory(History *h, char *command)
@@ -37,6 +46,18 @@ void addHistory(History *h, char *command)
 
     if (h->count < MAX_HISTORY) {
         h->count++;
+    }
+}
+
+void printHistory(History *h)
+{
+    for (int i = 0; i < h->count; i++) {
+        int indy = (h->current - i);
+        if (indy < 0) {
+            indy = indy % h->count;
+        }
+
+        printf("%d %s\n", h->count - i, h->commands[indy]);
     }
 }
 
@@ -85,25 +106,19 @@ int main(void)
         }
 
         if (strcmp(args[0], "history") == 0) {
-            for (int i = 0; i < h.count; i++) {
-                int indy = (h.current - i);
-                if (indy < 0) {
-                    indy = indy % h.count;
-                }
+            printHistory(&h);
+            continue;
+        }
 
-                printf("%d %s\n", h.count - i, h.commands[indy]);
+        pid_t pid = fork();
+
+        if (pid > 0) {
+            if (strpbrk(args[0], "&") == NULL) {
+                wait(NULL);
             }
         } else {
-            pid_t pid = fork();
-
-            if (pid > 0) {
-                if (strpbrk(args[0], "&") == NULL) {
-                    wait(NULL);
-                }
-            } else {
-                execvp(args[0], args);
-                return 0;
-            }
+            execvp(args[0], args);
+            return 0;
         }
 
         // add commnd to history
