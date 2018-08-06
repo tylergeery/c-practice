@@ -1,4 +1,7 @@
 ## Loading Kernel Module (linux)
+Update Makefile to point to {module}.o
+
+## Loading Kernel Module (linux)
 sudo insmod {module}.ko
 
 ## Removing Kernel Module
