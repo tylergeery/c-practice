@@ -15,7 +15,7 @@ ThreadShare ThreadShare_New(ThreadShare ts, int length, int* unsorted)
 {
     ts.current = 0;
     ts.count = length;
-    ts.arr = malloc(length * sizeof(int));
+    ts.arr = (int *)malloc(length * sizeof(int));
 
     memcpy(ts.arr, unsorted, length * sizeof(int));
 
@@ -25,7 +25,6 @@ ThreadShare ThreadShare_New(ThreadShare ts, int length, int* unsorted)
 void ThreadShare_Free(ThreadShare* ts)
 {
     free(ts->arr);
-    free(ts);
 }
 
 void sort(ThreadShare* ts)
@@ -88,6 +87,7 @@ int main(int argc, char* argv[])
         nums[i - 1] = atoi(argv[i]);
     }
 
+    // Kick off a sort for reach individual thread
     for (i = 0; i < THREAD_COUNT; i++) {
         int* start = &nums[i * per];
 
@@ -101,12 +101,12 @@ int main(int argc, char* argv[])
         }
     }
 
+    // Wait for each thread to finish
     for (i = 0; i < THREAD_COUNT; i++) {
         pthread_join(threads[i], NULL);
     }
 
-    printf("Merging results of all threads\n\n");
-
+    // Merge Results of all threads individual sort
     i = 0;
     while (i < size) {
         printf("%d ", getNext(shared));
@@ -114,6 +114,11 @@ int main(int argc, char* argv[])
     }
 
     printf("\n\n");
+
+    for (i = 0; i < THREAD_COUNT; i++) {
+        ThreadShare_Free(&shared[i]);
+    }
+    free(shared);
 
     return 0;
 }
