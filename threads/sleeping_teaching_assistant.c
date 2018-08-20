@@ -9,11 +9,11 @@
 #define HALLWAY_CHAIRS 3
 
 typedef struct {
-    int count;
     enum {SLEEPING, TEACHING} state;
     pthread_cond_t available;
-    pthread_cond_t done;
     pthread_mutex_t wake;
+    pthread_cond_t done;
+    pthread_mutex_t times_up;
 } TA;
 
 typedef struct {
@@ -22,44 +22,46 @@ typedef struct {
     enum {PENDING, WAITING, LEARNING, HELPED} state;
 } Student;
 
-sem_t *hallway_chairs;
+sem_t hallway_chairs;
 
 void *student_get_help(void *arg)
 {
     int i = 0;
-    int hallway_count;
     Student *student = (Student *)arg;
 
-    // printf("Student %d spawned\n", student->num);
     while (1) {
-        sem_getvalue(hallway_chairs, &hallway_count);
-
         // see if hallway spot is available
-        if (student->state == PENDING && hallway_count < HALLWAY_CHAIRS) {
-            int val = sem_wait(hallway_chairs);
+        if (student->state == PENDING) {
+            int val = sem_wait(&hallway_chairs);
             printf("Student %d is waiting in hallway\n", student->num);
 
             // wait til TA is available
             pthread_mutex_lock(&student->ta->wake);
-            printf("TA State: %d %d %d\n", SLEEPING, TEACHING, student->ta->state);
+            printf("TA About to get woke: %d %d %d\n", SLEEPING, TEACHING, student->ta->state);
             while(student->ta->state != SLEEPING)
                 pthread_cond_wait(&student->ta->available, &student->ta->wake);
+
+            // wake up TA
+            student->ta->state = TEACHING;
             pthread_mutex_unlock(&student->ta->wake);
-            printf("Student %d is meeting with TA\n", student->num);
 
             // release hallway lock
-            sem_post(hallway_chairs);
+            sem_post(&hallway_chairs);
             student->state = LEARNING;
 
+            pthread_cond_signal(&student->ta->available);
+            printf("Student %d is meeting with TA\n", student->num);
+
             // signal to those waiting
-            pthread_cond_wait(&student->ta->done, NULL);
+            pthread_cond_wait(&student->ta->done, &student->ta->times_up);
             student->state = HELPED;
-            pthread_cond_broadcast(&student->ta->available);
+            pthread_cond_signal(&student->ta->available);
+            pthread_mutex_unlock(&student->ta->times_up);
 
             break;
         }
 
-        printf("Student %d is for spot in hallway\n", student->num);
+        printf("Student %d is waiting for spot in hallway %d\n", student->num, student->state == PENDING);
         sleep(rand() % 10);
     }
 
@@ -72,22 +74,22 @@ void *ta_sleep_and_give_help(void *arg)
     TA *ta = (TA *)arg;
 
     while (helped < STUDENT_COUNT) {
-        printf("TA Count(%d) waiting for a student\n", ta->count);
+        printf("TA waiting for a student\n");
 
-        // pthread_mutex_lock(&ta->wake);
-        // pthread_cond_wait(&ta->available, &ta->wake);
-        printf("TA Count(%d) found a student\n", ta->count);
-        ta->state = TEACHING;
-        // pthread_mutex_unlock(&ta->wake);
+        pthread_mutex_lock(&ta->wake);
+        pthread_cond_wait(&ta->available, &ta->wake);
+        printf("TA found a student\n");
+        pthread_mutex_unlock(&ta->wake);
 
         // help current student
         sleep(rand() % 5);
 
-        // pthread_mutex_lock(&ta->wake);
+        pthread_mutex_lock(&ta->wake);
         ta->state = SLEEPING;
-        // pthread_mutex_unlock(&ta->wake);
+        pthread_mutex_unlock(&ta->wake);
 
         // have student tell the hallway that ta is free
+        printf("TA finished with student\n");
         pthread_cond_signal(&ta->done);
 
         helped++;
@@ -103,10 +105,14 @@ int main(void)
     pthread_t ta_thread;
     pthread_t student_threads[STUDENT_COUNT];
 
-    ta.count = 10;
     ta.state = SLEEPING;
     if (pthread_mutex_init(&ta.wake, NULL) != 0) {
         printf("Error: Wake mutex could not be initialized\n");
+        return errno;
+    }
+
+    if (pthread_mutex_init(&ta.times_up, NULL) != 0) {
+        printf("Error: TA Times up mutex could not be initialized\n");
         return errno;
     }
 
@@ -120,8 +126,7 @@ int main(void)
         return errno;
     }
 
-    hallway_chairs = sem_open("hallway_chairs", O_CREAT, S_IRUSR | S_IWUSR, HALLWAY_CHAIRS);
-    if (errno != 0) {
+    if (sem_init(&hallway_chairs, 0, HALLWAY_CHAIRS) != 0) {
         printf("Error: Hallway chairs semaphore could not be initialized\n");
         return errno;
     }
