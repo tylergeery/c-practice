@@ -32,17 +32,16 @@ void *read_job(void *param)
     int i;
     reader_args *args = (reader_args *)param;
 
-    for (i=0; i < WORK_COUNT; i++) {
-        sleep(rand() % 5);
-        printf("Reader %d ready for work\n", args->num);
+    while (1) {
+        sleep(rand() % 3);
 
         pthread_mutex_lock(&reader_count_lock);
         reader_count++;
         pthread_mutex_unlock(&reader_count_lock);
 
         pthread_mutex_lock(&value_lock);
-        while (value == 0) {
-            pthread_cond_wait(&reader_ready, &value_lock);
+        if (value == -1) {
+            break;
         }
         printf("Reader %d reading value = %d, reader count = %d\n", args->num, value, reader_count);
         pthread_mutex_unlock(&value_lock);
@@ -50,8 +49,14 @@ void *read_job(void *param)
         pthread_mutex_lock(&reader_count_lock);
         reader_count--;
         pthread_mutex_unlock(&reader_count_lock);
+
+        pthread_cond_signal(&writer_ready);
     }
 
+    pthread_mutex_unlock(&value_lock);
+    pthread_mutex_lock(&reader_count_lock);
+    reader_count--;
+    pthread_mutex_unlock(&reader_count_lock);
     printf("Reader %d quitting\n", args->num);
     return NULL;
 }
@@ -63,7 +68,6 @@ void *write_job(void *param)
 
     for (i=0; i < WORK_COUNT; i++) {
         sleep(rand() % 5);
-        printf("Writer %d ready for work\n", args->num);
 
         pthread_mutex_lock(&reader_count_lock);
         while (reader_count > 0) {
@@ -73,7 +77,8 @@ void *write_job(void *param)
         pthread_mutex_lock(&value_lock);
         value = args->value;
         printf("Writer %d Setting value = %d, reader count = %d\n", args->num, args->value, reader_count);
-        pthread_mutex_lock(&value_lock);
+        pthread_mutex_unlock(&value_lock);
+        pthread_cond_broadcast(&reader_ready);
 
         pthread_mutex_unlock(&reader_count_lock);
     }
@@ -111,12 +116,17 @@ int main()
         pthread_create(&reader_threads[i], NULL, read_job, &reader_arg_list[i]);
     }
 
-    for (i = 0; i < READER_COUNT; i++) {
-        pthread_join(reader_threads[i], NULL);
-    }
-
     for (i = 0; i < WRITER_COUNT; i++) {
         pthread_join(writer_threads[i], NULL);
+    }
+
+    pthread_mutex_lock(&value_lock);
+    value = -1;
+    printf("Cleaning up readers, setting value to -1\n");
+    pthread_mutex_unlock(&value_lock);
+
+    for (i = 0; i < READER_COUNT; i++) {
+        pthread_join(reader_threads[i], NULL);
     }
 
     return 0;
