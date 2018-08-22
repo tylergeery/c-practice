@@ -27,20 +27,21 @@ typedef struct {
     int num;
 } reader_args;
 
-void *read(void *param)
+void *read_job(void *param)
 {
     int i;
     reader_args *args = (reader_args *)param;
 
     for (i=0; i < WORK_COUNT; i++) {
         sleep(rand() % 5);
+        printf("Reader %d ready for work\n", args->num);
 
         pthread_mutex_lock(&reader_count_lock);
         reader_count++;
         pthread_mutex_unlock(&reader_count_lock);
 
         pthread_mutex_lock(&value_lock);
-        while (value == NULL) {
+        while (value == 0) {
             pthread_cond_wait(&reader_ready, &value_lock);
         }
         printf("Reader %d reading value = %d, reader count = %d\n", args->num, value, reader_count);
@@ -52,15 +53,17 @@ void *read(void *param)
     }
 
     printf("Reader %d quitting\n", args->num);
+    return NULL;
 }
 
-void *write(void *param)
+void *write_job(void *param)
 {
     int i;
     writer_args *args = (writer_args *)param;
 
     for (i=0; i < WORK_COUNT; i++) {
         sleep(rand() % 5);
+        printf("Writer %d ready for work\n", args->num);
 
         pthread_mutex_lock(&reader_count_lock);
         while (reader_count > 0) {
@@ -76,26 +79,36 @@ void *write(void *param)
     }
 
     printf("Writer %d quitting\n", args->num);
+    return NULL;
 }
 
 int main()
 {
     int i;
-    int writer_arg_list[WRITER_COUNT];
+    writer_args writer_arg_list[WRITER_COUNT];
+    reader_args reader_arg_list[WRITER_COUNT];
     pthread_t writer_threads[WRITER_COUNT];
     pthread_t reader_threads[READER_COUNT];
 
     for (i = 0; i < WRITER_COUNT; i++) {
         writer_arg_list[i].num = i;
         writer_arg_list[i].value = rand();
-    }
 
-    for (i = 0; i < WRITER_COUNT; i++) {
-        pthread_create(&writer_threads[i], NULL, write, &writer_arg_list[i]);
+        if (writer_arg_list[i].value == 0) {
+            writer_arg_list[i].value = 1;
+        }
     }
 
     for (i = 0; i < READER_COUNT; i++) {
-        pthread_create(&reader_threads[i], NULL, write, &reader_arg_list[i]);
+        reader_arg_list[i].num = i;
+    }
+
+    for (i = 0; i < WRITER_COUNT; i++) {
+        pthread_create(&writer_threads[i], NULL, write_job, &writer_arg_list[i]);
+    }
+
+    for (i = 0; i < READER_COUNT; i++) {
+        pthread_create(&reader_threads[i], NULL, read_job, &reader_arg_list[i]);
     }
 
     for (i = 0; i < READER_COUNT; i++) {
