@@ -11,6 +11,7 @@
 typedef struct {
     enum {SLEEPING, TEACHING} state;
     pthread_cond_t available;
+    pthread_cond_t active;
     pthread_mutex_t wake;
     pthread_cond_t done;
     pthread_mutex_t times_up;
@@ -37,26 +38,28 @@ void *student_get_help(void *arg)
 
             // wait til TA is available
             pthread_mutex_lock(&student->ta->wake);
-            printf("TA About to get woke: %d %d %d\n", SLEEPING, TEACHING, student->ta->state);
+            printf("Student %d About to wake TA: %d\n", student->num, student->ta->state);
             while(student->ta->state != SLEEPING)
                 pthread_cond_wait(&student->ta->available, &student->ta->wake);
 
             // wake up TA
+            printf("Student %d woke up TA\n", student->num);
             student->ta->state = TEACHING;
             pthread_mutex_unlock(&student->ta->wake);
+            printf("Student %d relinquishing hallway spot\n", student->num);
 
             // release hallway lock
             sem_post(&hallway_chairs);
             student->state = LEARNING;
-
-            pthread_cond_signal(&student->ta->available);
-            printf("Student %d is meeting with TA\n", student->num);
+            printf("Student %d is currently learning\n", student->num);
+            pthread_cond_signal(&student->ta->active);
 
             // signal to those waiting
             pthread_cond_wait(&student->ta->done, &student->ta->times_up);
+            printf("Student %d is done learning\n", student->num);
             student->state = HELPED;
-            pthread_cond_signal(&student->ta->available);
             pthread_mutex_unlock(&student->ta->times_up);
+            pthread_cond_signal(&student->ta->available);
 
             break;
         }
@@ -74,22 +77,23 @@ void *ta_sleep_and_give_help(void *arg)
     TA *ta = (TA *)arg;
 
     while (helped < STUDENT_COUNT) {
-        printf("TA waiting for a student\n");
-
         pthread_mutex_lock(&ta->wake);
-        pthread_cond_wait(&ta->available, &ta->wake);
+        printf("TA waiting for a student\n");
+        while (ta->state != TEACHING)
+            pthread_cond_wait(&ta->active, &ta->wake);
         printf("TA found a student\n");
         pthread_mutex_unlock(&ta->wake);
 
         // help current student
-        sleep(rand() % 5);
+        sleep((rand() % 5) + 1);
 
+        printf("TA finishing with student\n");
         pthread_mutex_lock(&ta->wake);
         ta->state = SLEEPING;
         pthread_mutex_unlock(&ta->wake);
 
         // have student tell the hallway that ta is free
-        printf("TA finished with student\n");
+        printf("TA notifying student he is done\n");
         pthread_cond_signal(&ta->done);
 
         helped++;
@@ -118,6 +122,11 @@ int main(void)
 
     if (pthread_cond_init(&ta.available, NULL) != 0) {
         printf("Error: TA Available condition could not be initialized\n");
+        return errno;
+    }
+
+    if (pthread_cond_init(&ta.active, NULL) != 0) {
+        printf("Error: TA active condition could not be initialized\n");
         return errno;
     }
 
