@@ -23,6 +23,16 @@ void generateReferenceString(char* str, int l) {
     }
 }
 
+int findNextUse(char *str, char c, int i, int l) {
+    for (int j = i+1; j < l; j++) {
+        if (c == str[j]) {
+            return j;
+        }
+    }
+
+    return l; // not used again
+}
+
 /**
  * First In, First Out Page Replacement
  *
@@ -123,8 +133,51 @@ int lru(char *str, int l, int frames) {
  * This is, of course, not realistic but it does give us a bound for best case
  */
 int optimal(char *str, int l, int frames) {
-    // TODO: implement
-    return 0;
+    int i, j, last, optimal, misses = 0;
+    Entry frameList[frames];
+
+    for (i = 0; i < frames; i++) {
+        Entry ent = {'\0', 0};
+        frameList[i] = ent;
+    }
+
+    for (i = 0; i < l; i++) {
+        int found = 0;
+
+        // check if value is in frameList
+        for (j = 0; j < frames; j++) {
+            if (frameList[j].value == str[i]) {
+                // in cache, we can continue
+                found = 1;
+                frameList[j].last_use = i;
+                break;
+            }
+        }
+
+        // check if page replacement necessary
+        if (!found) {
+            last = 0, optimal = 0;
+
+            for (j = 0; j < frames; j++) {
+                if (frameList[j].value == '\0') {
+                    last = j;
+                    break;
+                }
+
+                int next = findNextUse(str, frameList[j].value, i, l);
+                if (next > optimal) {
+                    last = j;
+                    optimal = next;
+                }
+            }
+
+            Entry entry = {str[i], i};
+            frameList[last] = entry;
+            misses++;
+        }
+    }
+
+    return misses;
 }
 
 int main(int argc, char** argv) {
@@ -149,6 +202,7 @@ int main(int argc, char** argv) {
 
     int fifo_faults = fifo(ref_string, PAGE_REF_STR_LENGTH, frames);
     int lru_faults = lru(ref_string, PAGE_REF_STR_LENGTH, frames);
+    int optimal_faults = optimal(ref_string, PAGE_REF_STR_LENGTH, frames);
 
-    printf("\nReference string: %s\n\nPage replacement faults:\n\tFIFO: %d\n\tLRU: %d\n\n\n", ref_string, fifo_faults, lru_faults);
+    printf("\nReference string: %s\n\nPage replacement faults:\n\tFIFO: %d\n\tLRU: %d\n\toptimal: %d\n\n\n", ref_string, fifo_faults, lru_faults, optimal_faults);
 }
