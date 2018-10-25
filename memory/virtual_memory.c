@@ -10,7 +10,7 @@ typedef struct {
     char* raw;
 } Address;
 
-char* [TLB_ENTRIES]tlb;
+char* tlb[TLB_ENTRIES];
 
 void parseLogicalAddress(Address* address, char* raw)
 {
@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
     // TODO: loop through addresses
 
     Address address;
-    parseLogicalAddress(address, "ff");
+    parseLogicalAddress(&address, "ff");
 
     // TODO: check if address is in tlb
 
