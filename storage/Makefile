@@ -1,4 +1,4 @@
-ALGS = fcfs.c
+ALGS = $(wildcard algs/*.c)
 TARGET = tmp
 CC = gcc
 HEADERS = header.h
