@@ -21,6 +21,18 @@ void sort_requests(int *requests) {
     }
 }
 
+int should_serve(int dir, int next, int current) {
+    if (next == -1) {
+        return 0;
+    }
+
+    if (dir > 0) {
+        return (next >= current);
+    }
+
+    return (next <= current);
+}
+
 int find_starting_bound(int* requests, int start_pos) {
     for (int i = 0; i < CYLINDER_REQUESTS; i++) {
         if (requests[i] >= start_pos) {
@@ -82,7 +94,7 @@ int main(int argc, char** argv) {
     copy_cylinders(base_requests, requests);
     int scan_count = scan(start_pos, requests);
     copy_cylinders(base_requests, requests);
-    int cscan_count = 0; // TODO
+    int cscan_count = cscan(start_pos, requests);
     copy_cylinders(base_requests, requests);
     int look_count = 0; // TODO
     copy_cylinders(base_requests, requests);

@@ -1,14 +1,13 @@
 #include <stdlib.h>
 #include "../header.h"
 
-int scan(int start_pos, int* requests) {
+int cscan(int start_pos, int* requests) {
     int visited, i, travel = 0, current = start_pos;
     int dir = 1;
 
-    for (i = 0, visited = 0; visited < CYLINDER_REQUESTS; ) {
-        i += dir;
-
-        if (i < 0 || i >= CYLINDER_REQUESTS) {
+    for (i = 0, visited = 0; visited < CYLINDER_REQUESTS; i += 1) {
+        if (i >= CYLINDER_REQUESTS) {
+            i = -1;
             dir *= -1;
             continue;
         }
