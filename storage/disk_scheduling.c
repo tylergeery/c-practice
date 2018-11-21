@@ -96,9 +96,9 @@ int main(int argc, char** argv) {
     copy_cylinders(base_requests, requests);
     int cscan_count = cscan(start_pos, requests);
     copy_cylinders(base_requests, requests);
-    int look_count = 0; // TODO
+    int look_count = look(start_pos, requests);
     copy_cylinders(base_requests, requests);
-    int clook_count = 0; // TODO
+    int clook_count = clook(start_pos, requests);
 
     // Calculate travel for all algorithms
     printf(

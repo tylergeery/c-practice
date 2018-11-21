@@ -10,6 +10,8 @@ int fcfs(int start_pos, int* requests);
 int sstf(int start_pos, int* requests);
 int scan(int start_pos, int* requests);
 int cscan(int start_pos, int* requests);
+int look(int start_pos, int* requests);
+int clook(int start_pos, int* requests);
 
 #define max(x,y) ((x) >= (y)) ? (x) : (y)
 #define min(x,y) ((x) <= (y)) ? (x) : (y)

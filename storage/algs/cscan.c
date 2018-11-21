@@ -2,21 +2,22 @@
 #include "../header.h"
 
 int cscan(int start_pos, int* requests) {
-    int visited, i, travel = 0, current = start_pos;
-    int dir = 1;
+    int visited = 0, i = start_pos, travel = 0;
 
-    for (i = 0, visited = 0; visited < CYLINDER_REQUESTS; i += 1) {
-        if (i >= CYLINDER_REQUESTS) {
-            i = -1;
-            dir *= -1;
-            continue;
+    sort_requests(requests);
+    int next = find_starting_bound(requests, start_pos);
+
+    for (; visited < CYLINDER_REQUESTS; ) {
+        while (requests[next] == i) {
+            visited++;
+            requests[next] = -1;
+            next = (next+1) % CYLINDER_REQUESTS;
         }
 
-        if (should_serve(dir, requests[i], current)) {
-            travel += abs(current - requests[i]);
-            current = requests[i];
-            visited++;
-            requests[i] = -1;
+        travel += 1;
+        i = (i+1) % CYLINDER_COUNT;
+        if (i == 0) {
+            travel += CYLINDER_COUNT;
         }
     }
 
