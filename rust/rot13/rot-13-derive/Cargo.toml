@@ -1,0 +1,13 @@
+[package]
+name = "rot_13_derive"
+version = "0.1.0"
+authors = ["tylergeery <tyler.geery@yahoo.com>"]
+edition = "2018"
+publish = false
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "0.15"
+quote = "0.6"

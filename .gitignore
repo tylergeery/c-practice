@@ -1,1 +1,3 @@
-*/rust/*/target/*
+webserver/rust/hello/target/
+rust/rot13/target
+rust/rot13/rot-13-derive/target

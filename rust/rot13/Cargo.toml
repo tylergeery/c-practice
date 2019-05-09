@@ -1,0 +1,9 @@
+[package]
+name = "rot13"
+version = "0.1.0"
+authors = ["tylergeery <tyler.geery@yahoo.com>"]
+edition = "2018"
+publish = false
+
+[dependencies]
+rot_13_derive = { path = "rot-13-derive" }
