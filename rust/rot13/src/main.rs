@@ -1,15 +1,24 @@
+#![feature(custom_attribute)]
+#![recursion_limit="256"]
 use std::time::SystemTime;
 use rot_13_derive::Rot13;
 
 pub trait Rot13 {
-    fn rot13(&self);
+    type S;
+
+    fn rot13(&self) -> Self::S;
 }
 
 #[derive(Rot13)]
 struct Message {
     note: String,
     author: String,
-    created_at: u64
+    #[skip_rot13] created_at: u64,
+}
+
+#[derive(Rot13)]
+struct Text {
+    value: String,
 }
 
 fn main() {
@@ -19,11 +28,15 @@ fn main() {
         created_at: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()
     };
 
-    msg.rot13();
+    let new = msg.rot13();
 
-    println!("{} ({}) - {}", msg.note, msg.author, msg.created_at);
+    println!("new: {} ({}) - {}", new.note, new.author, new.created_at);
 
-    msg.rot13();
+    let orig = new.rot13();
 
-    println!("{} ({}) - {}", msg.note, msg.author, msg.created_at);
+    println!("orig: {} ({}) - {}", orig.note, orig.author, orig.created_at);
+
+    let txt = Text { value: String::from("jbeyq") };
+
+    println!("hello {}", txt.rot13().value);
 }

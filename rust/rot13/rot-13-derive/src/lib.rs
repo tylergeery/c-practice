@@ -1,10 +1,18 @@
+#![recursion_limit="128"]
 extern crate proc_macro;
 
 use crate::proc_macro::TokenStream;
-use quote::quote;
+use quote::{quote, quote_spanned};
 
-fn do_rot_13() {
+fn should_rotate(f: &syn::Field) -> bool {
+    for attr in &f.attrs {
+        let a = attr.interpret_meta();
+        if a.is_some() && a.unwrap().name().to_string() == "skip_rot13" {
+            return false;
+        }
+    }
 
+    true
 }
 
 fn impl_rot13(ast: &syn::DeriveInput) -> TokenStream {
@@ -12,30 +20,50 @@ fn impl_rot13(ast: &syn::DeriveInput) -> TokenStream {
     match ast.data {
         syn::Data::Struct(ref data_struct) => {
             match data_struct.fields {
-                // Structure with named fields (as opposed to tuple-like struct or unit struct)
-                // E.g. struct Point { x: f64, y: f64 }
+                // Iterate over all struct named fields
                 syn::Fields::Named(ref fields_named) => {
-                    // Iterate over the fields: `x`, `y`, ..
+                    let struct_parts = fields_named.named.iter()
+                        .filter(|f| { should_rotate(f) })
+                        .map(|f| {
+                            let name = &f.ident;
+                            quote_spanned! {f.ident.as_ref().unwrap().span()=>
+                                #name : String::from_utf8(
+                                    self.#name.clone().as_bytes().iter()
+                                        .map(|c| {
+                                            let val = *c;
+                                            if val <= 122 && val >= 110 { return val - 13; }
+                                            if val >= 97  && val < 110 { return 122 - (109-val); }
+                                            if val <= 90 && val >= 78 { return val - 13; }
+                                            if val >= 65  && val < 78 { return 90 - (77-val); }
+                                            val
+                                        }).collect()
+                                    ).unwrap(),
+                            }
+                        })
+                        .chain(
+                            fields_named.named.iter()
+                                .filter(|f| { !should_rotate(f) })
+                                .map(|f| {
+                                    let name = &f.ident;
+                                    quote_spanned! {f.ident.as_ref().unwrap().span()=>
+                                        #name : self.#name.clone(),
+                                    }
+                                })
+                        );
+
                     let gen = quote! {
                         impl Rot13 for #name {
-                            fn rot13(&self) {
-                                println!("rot13 called! called from {}", stringify!(#name));
+                            type S = #name;
+
+                            fn rot13(&self) -> Self::S {
+                                #name {
+                                    #(#struct_parts)*
+                                }
                             }
                         }
                     };
 
-                    for f in &fields_named.named {
-                        // let tokens = TokenStream::new();
-                        // f.ty.to_tokens(tokens);
-                        println!("found f.ident: {:?} with type", &f.ident);
-                    }
-
                     return gen.into();
-                    // for field in fields_named.named.iter() {
-                    //     let field_name = &field.ident;
-                    //
-                    //
-                    // }
                 },
                 _ => (),
             }
